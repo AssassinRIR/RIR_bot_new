@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RiRs Bot - Advanced ChatGPT UI</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar left-sidebar">
+            <div class="sidebar-header">
+                <h1 class="app-title">RiRs Bot</h1>
+                <button class="new-chat-btn"><i class="fas fa-plus"></i> New Chat</button>
+            </div>
+            <div class="chat-history">
+                <input type="text" class="chat-search" placeholder="Search chats...">
+                <div class="chat-list">
+                    <div class="chat-item active">
+                        <span>Conversation about UI design</span>
+                        <i class="fas fa-star star-icon"></i>
+                    </div>
+                    <div class="chat-item">
+                        <span>Python script debugging</span>
+                    </div>
+                    </div>
+                <div class="starred-messages-section">
+                    <h4><i class="fas fa-star"></i> Starred Messages</h4>
+                    <div class="chat-item">
+                        <span>Pinned important message</span>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <button class="settings-btn"><i class="fas fa-cog"></i> Settings</button>
+                <button class="export-btn"><i class="fas fa-download"></i> Export</button>
+            </div>
+        </aside>
+
+        <main class="chat-main">
+            <header class="chat-header">
+                <h2 class="chat-title" contenteditable="true">New Conversation</h2>
+                <div class="header-actions">
+                    <button class="full-screen-toggle-btn"><i class="fas fa-expand"></i></button>
+                    <button class="collaborate-btn"><i class="fas fa-user-friends"></i> Share</button>
+                    </div>
+            </header>
+            <div class="chat-display">
+                <div class="system-message">Web Browse active for this query.</div>
+                <div class="message user-message">
+                    <p>Can you design a UI for a ChatGPT app?</p>
+                    <span class="timestamp">10:00 AM</span>
+                    <div class="message-actions">
+                        <button><i class="fas fa-star"></i></button>
+                        <button><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+                <div class="message ai-message">
+                    <p>Certainly! Let's brainstorm some ideas...</p>
+                    <span class="timestamp">10:01 AM</span>
+                    <div class="message-actions">
+                        <button><i class="fas fa-star"></i></button>
+                        <button><i class="fas fa-copy"></i></button>
+                        <button><i class="fas fa-redo"></i></button>
+                    </div>
+                </div>
+                <div class="message ai-message">
+                    <p>Here's a concept image for the layout:</p>
+                    <img src="https://via.placeholder.com/300x200?text=UI+Concept" alt="Generated UI concept" class="chat-image">
+                    <span class="timestamp">10:05 AM</span>
+                </div>
+            </div>
+            <footer class="chat-input-area">
+                <div class="input-controls-top">
+                    <button class="tool-toggle-btn" data-tool="voice"><i class="fas fa-microphone"></i> Voice</button>
+                    <button class="tool-toggle-btn" data-tool="file"><i class="fas fa-paperclip"></i> File</button>
+                    <button class="tool-toggle-btn" data-tool="image"><i class="fas fa-image"></i> Image</button>
+                    <button class="tool-toggle-btn" data-tool="code"><i class="fas fa-code"></i> Code</button>
+                    <button class="tool-toggle-btn" data-tool="web"><i class="fas fa-globe"></i> Web</button>
+                </div>
+                <div class="input-bar-main">
+                    <textarea class="prompt-input" placeholder="Type your message or drag a file here..."></textarea>
+                    <button class="send-btn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </footer>
+        </main>
+
+        </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Settings</h2>
+
+            <div class="setting-section">
+                <h3>Theme</h3>
+                <label class="switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider round"></span>
+                </label>
+                <span>Dark Mode</span>
+                <button class="settings-btn" id="themeSettingsBtn"><i class="fas fa-palette"></i> Theme</button>
+                <div class="theme-selector" style="margin: 10px 0; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="theme-btn" data-theme="neon-red" style="background:#ff0033;color:#fff;">Neon Red</button>
+                    <button class="theme-btn" data-theme="neon-blue" style="background:#00f0ff;color:#0a0f1c;">Neon Blue</button>
+                    <button class="theme-btn" data-theme="neon-white" style="background:#e0e6ff;color:#222;">Neon White</button>
+                    <button class="theme-btn" data-theme="neon-yellow" style="background:#ffe066;color:#1a1a0a;">Neon Yellow</button>
+                    <button class="theme-btn" data-theme="neon-green" style="background:#00ff99;color:#0a1a0a;">Neon Green</button>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <h3><i class="fas fa-brain"></i> Memory & Context</h3>
+                <p>Manage how the bot remembers your preferences and conversation context.</p>
+                <textarea id="customInstructions" placeholder="Enter custom instructions or persona settings..."></textarea>
+                <button class="save-setting-btn">Save Preferences</button>
+                <p class="memory-display">Current memory preferences: Concise answers, Python focus.</p>
+            </div>
+
+            <div class="setting-section">
+                <h3><i class="fas fa-tools"></i> Active Tools & Preferences</h3>
+                <p>Control which AI tools are active by default or how they behave.</p>
+                <div class="tool-preference-item">
+                    <input type="checkbox" id="defaultWebBrowse" checked>
+                    <label for="defaultWebBrowse">Enable Web Browse by default</label>
+                </div>
+                <div class="tool-preference-item">
+                    <input type="checkbox" id="defaultCodeInterpreter">
+                    <label for="defaultCodeInterpreter">Enable Code Interpreter by default</label>
+                </div>
+                <button class="save-setting-btn">Save Tool Settings</button>
+            </div>
+
+            <div class="setting-section">
+                <h3><i class="fas fa-file-alt"></i> Document & Image Handling</h3>
+                <p>View uploaded document summaries or generated images from previous sessions.</p>
+                <div class="setting-gallery">
+                    <h4>Recently Uploaded Documents</h4>
+                    <div class="document-list">
+                        <div class="document-item">Report.pdf <button>View</button></div>
+                    </div>
+                    <h4>Recently Generated Images</h4>
+                    <div class="image-grid">
+                        <img src="https://via.placeholder.com/80?text=Img1" alt="Generated Image 1">
+                        <img src="https://via.placeholder.com/80?text=Img2" alt="Generated Image 2">
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <h3>Account & Accessibility</h3>
+                <button class="manage-account-btn">Manage Account</button>
+                <label for="fontSizeSlider">Font Size:</label>
+                <input type="range" id="fontSizeSlider" min="12" max="20" value="16">
+            </div>
+
+            </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

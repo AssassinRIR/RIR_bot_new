@@ -1,0 +1,14 @@
+{
+  "name": "your-ai-bot",
+  "version": "1.0.0",
+  "description": "Netlify function for AI chatbot",
+  "main": "netlify/functions/ai.js",
+  "scripts": {
+    "start": "netlify dev"
+  },
+  "dependencies": {
+    "openai": "^3.0.0",
+    "node-fetch": "^2.6.7",
+    "@google/generative-ai": "^0.1.0"
+  }
+}
