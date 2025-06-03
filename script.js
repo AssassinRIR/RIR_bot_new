@@ -87,39 +87,39 @@ document.addEventListener('DOMContentLoaded', () => {
             promptInput.style.height = 'auto';
 
             // Show a "thinking" indicator or system message while waiting for AI
-            appendSystemMessage('RiRs Bot is thinking...'); //
+            appendSystemMessage('RiRs Bot is thinking...');
 
             // Make API call to your Netlify function
-            fetch('/.netlify/functions/ai', { // This path targets your Netlify function
-                method: 'POST', //
-                headers: { //
-                    'Content-Type': 'application/json', //
+            fetch('/.netlify/functions/ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ message: messageText, provider: 'gemini' }), // You can change 'gemini' to 'deepseek'
             })
-            .then(response => { //
-                if (!response.ok) { //
+            .then(response => {
+                if (!response.ok) {
                     // If the response is not OK (e.g., 400, 500 status)
-                    return response.json().then(err => { throw new Error(err.error || 'Unknown API error'); }); //
+                    return response.json().then(err => { throw new Error(err.error || 'Unknown API error'); });
                 }
-                return response.json(); //
+                return response.json();
             })
-            .then(data => { //
+            .then(data => {
                 // Remove the "thinking" message
-                let systemMessageDiv = chatDisplay.querySelector('.system-message'); //
-                if (systemMessageDiv && systemMessageDiv.textContent === 'RiRs Bot is thinking...') { //
-                    systemMessageDiv.remove(); // Or hide it
+                let systemMessageDiv = chatDisplay.querySelector('.system-message');
+                if (systemMessageDiv && systemMessageDiv.textContent === 'RiRs Bot is thinking...') {
+                    systemMessageDiv.remove();
                 }
-                appendMessage(data.reply, 'ai'); //
+                appendMessage(data.reply, 'ai'); // Now, data.reply will be parsed as markdown
             })
-            .catch(error => { //
-                console.error('Error fetching AI response:', error); //
+            .catch(error => {
+                console.error('Error fetching AI response:', error);
                 // Remove the "thinking" message and display an error
-                let systemMessageDiv = chatDisplay.querySelector('.system-message'); //
-                if (systemMessageDiv && systemMessageDiv.textContent === 'RiRs Bot is thinking...') { //
-                    systemMessageDiv.remove(); //
+                let systemMessageDiv = chatDisplay.querySelector('.system-message');
+                if (systemMessageDiv && systemMessageDiv.textContent === 'RiRs Bot is thinking...') {
+                    systemMessageDiv.remove();
                 }
-                appendSystemMessage('Error: Could not get a response. ' + error.message); //
+                appendSystemMessage('Error: Could not get a response. ' + error.message);
             });
         }
     }
@@ -129,7 +129,12 @@ document.addEventListener('DOMContentLoaded', () => {
         messageDiv.classList.add('message', sender + '-message');
 
         const paragraph = document.createElement('p');
-        paragraph.textContent = text;
+
+        // *** THIS IS THE KEY CHANGE FOR MARKDOWN RENDERING ***
+        // Use marked.parse() to convert markdown string to HTML string
+        // The marked.js library must be included in your index.html
+        paragraph.innerHTML = marked.parse(text); // This renders markdown (including code blocks) as HTML
+
         messageDiv.appendChild(paragraph);
 
         if (imageUrl) {

@@ -844,3 +844,29 @@ textarea#customInstructions {
         justify-content: center; /* Center buttons on small screens */
     }
 }
+
+/* NEW CODE BLOCK STYLES FOR MARKDOWN RENDERING */
+pre {
+    background-color: #eee;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto; /* Enable horizontal scroll for long lines */
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.9em;
+    line-height: 1.4;
+    margin-top: 10px; /* Space above code blocks */
+    margin-bottom: 10px; /* Space below code blocks */
+}
+body.dark-mode pre {
+    background-color: #333;
+    color: #eee;
+}
+code {
+    font-family: inherit; /* For inline code within paragraphs */
+    background-color: rgba(27,31,35,.05);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+body.dark-mode code {
+    background-color: rgba(255,255,255,.1);
+}
