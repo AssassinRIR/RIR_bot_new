@@ -18,7 +18,7 @@ exports.handler = async function (event, context) {
 
   const userMessage = body.message;
   const provider = (body.provider || 'gemini').toLowerCase(); // default to 'gemini'
-  const query = body.query; // New: For Brave search queries
+  const query = body.query; // For Brave search queries
 
   if (!userMessage && !query) {
     return {
@@ -26,6 +26,14 @@ exports.handler = async function (event, context) {
       body: JSON.stringify({ error: 'No message or query provided in the request' }),
     };
   }
+
+  // --- Get Current Date and Time ---
+  const currentDate = new Date();
+  const formattedDate = currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const currentTime = currentDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+
+  const systemPromptContent = `Current date: ${formattedDate}, time: ${currentTime}.`;
+  // ---------------------------------
 
   try {
     let replyText = '';
@@ -45,8 +53,11 @@ exports.handler = async function (event, context) {
       // Use “gemini-2.0-flash” model for this example
       const geminiModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-      console.log('Calling Google Gemini 2.0 Flash with message:', userMessage);
-      const geminiResult = await geminiModel.generateContent(userMessage);
+      // Pass the system prompt content with the user message
+      const fullMessage = `${systemPromptContent}\n\nUser: ${userMessage}`; // Combine system info with user message
+
+      console.log('Calling Google Gemini 2.0 Flash with message:', fullMessage);
+      const geminiResult = await geminiModel.generateContent(fullMessage);
       const geminiResponse = await geminiResult.response;
       replyText = geminiResponse.text().trim();
       console.log('Gemini Reply:', replyText);
@@ -73,6 +84,7 @@ exports.handler = async function (event, context) {
         body: JSON.stringify({
           model: 'deepseek/deepseek-chat-v3-0324:free',
           messages: [
+            { role: 'system', content: systemPromptContent }, // Add system prompt
             { role: 'user', content: userMessage }
           ],
           // (Optional) you can add temperature, max_tokens, etc. here
@@ -150,6 +162,9 @@ exports.handler = async function (event, context) {
           replyText += `${index + 1}. **[${r.title}](${r.url})**\n`;
           replyText += `   ${r.snippet}\n\n`;
         });
+        // You might want to append the current date/time to the Brave search response too,
+        // if the bot should specifically mention when the search was performed.
+        // For simplicity, we'll leave it out here as it's primarily for AI context.
       } else {
         replyText = "I couldn't find any relevant results for your search query on the web.";
       }
