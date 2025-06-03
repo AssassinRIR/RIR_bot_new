@@ -49,14 +49,16 @@ document.addEventListener('DOMContentLoaded', () => {
         darkModeToggle.checked = false;
     }
 
-    // --- Current Date & Time Functionality ---
+    // --- Current Date & Time Functionality (for sidebar display) ---
     function updateDateTime() {
         const now = new Date();
         const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
         const dateString = now.toLocaleDateString(undefined, optionsDate);
         const timeString = now.toLocaleTimeString(undefined, optionsTime);
-        currentDateTimeElement.innerHTML = `${dateString}<br>${timeString}`; // Update innerHTML
+        if (currentDateTimeElement) { // Check if element exists before updating
+            currentDateTimeElement.innerHTML = `${dateString}<br>${timeString}`; // Update innerHTML
+        }
     }
 
     // Call it once to display immediately
@@ -127,23 +129,28 @@ document.addEventListener('DOMContentLoaded', () => {
             appendThinkingMessage(); // Show thinking indicator
 
             let providerToSend = 'gemini'; // Default AI provider
+            let payloadMessage = messageText; // What to send as 'message' or 'query'
+
             // Check if Web Browse tool is active
             const webToolBtn = document.querySelector('.tool-toggle-btn[data-tool="web"]');
             if (webToolBtn && webToolBtn.classList.contains('active')) {
-                // If the web tool is active, send the query to Brave API
-                // For a real app, you might use the AI to decide if a web search is needed
-                // For this example, we'll assume if web tool is active, the next query is for web search.
-                // Or you could make 'web' an explicit command like '/web <query>'
                 providerToSend = 'brave';
+                payloadMessage = messageText; // For Brave, the user's message is the query
+                appendSystemMessage('Initiating web search with Brave...'); // Add clear feedback
+                console.log("Web tool is active. Preparing to send to Brave API with query:", payloadMessage); // Debug log
+            } else {
+                console.log("Web tool is NOT active. Preparing to send to default AI provider:", providerToSend); // Debug log
             }
 
             // Construct payload based on provider
             let requestBody;
             if (providerToSend === 'brave') {
-                requestBody = JSON.stringify({ query: messageText, provider: 'brave' });
+                requestBody = JSON.stringify({ query: payloadMessage, provider: 'brave' });
             } else {
-                requestBody = JSON.stringify({ message: messageText, provider: providerToSend });
+                requestBody = JSON.stringify({ message: payloadMessage, provider: providerToSend });
             }
+
+            console.log("Sending API request with body:", requestBody); // Debug log
 
             // Make API call to your Netlify function
             fetch('/.netlify/functions/ai', {
@@ -156,18 +163,29 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(response => {
                 removeThinkingMessage(); // Remove thinking indicator
                 if (!response.ok) {
-                    // If the response is not OK (e.g., 400, 500 status)
-                    return response.json().then(err => { throw new Error(err.error || 'Unknown API error'); });
+                    return response.json().then(err => {
+                        console.error('API Error Response:', err); // Log the full error from backend
+                        throw new Error(err.error || `Unknown API error (Status: ${response.status})`);
+                    });
                 }
                 return response.json();
             })
             .then(data => {
                 appendMessage(data.reply, 'ai'); // Now, data.reply will be parsed as markdown
+                // Deactivate web tool after use, if it's a one-off search per query
+                if (providerToSend === 'brave' && webToolBtn) { // Check webToolBtn exists
+                    webToolBtn.classList.remove('active');
+                    appendSystemMessage('Web search completed. Web Browse is now inactive.');
+                }
             })
             .catch(error => {
                 console.error('Error fetching AI response:', error);
                 removeThinkingMessage(); // Remove thinking indicator on error
                 appendSystemMessage('Error: Could not get a response. ' + error.message);
+                // Ensure web tool is deactivated on error too, if it was active
+                if (providerToSend === 'brave' && webToolBtn && webToolBtn.classList.contains('active')) {
+                    webToolBtn.classList.remove('active');
+                }
             });
         }
     }

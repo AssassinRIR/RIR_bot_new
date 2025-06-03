@@ -16,9 +16,11 @@ exports.handler = async function (event, context) {
     };
   }
 
-  const userMessage = body.message;
+  const userMessage = body.message; // This will be defined for Gemini/Deepseek calls
   const provider = (body.provider || 'gemini').toLowerCase(); // default to 'gemini'
-  const query = body.query; // For Brave search queries
+  const query = body.query; // This will be the actual search query if provider is 'brave'
+
+  console.log(`[ai.js] Received request - Provider: ${provider}, Message: "${userMessage}", Query: "${query}"`);
 
   if (!userMessage && !query) {
     return {
@@ -27,51 +29,51 @@ exports.handler = async function (event, context) {
     };
   }
 
-  // --- Get Current Date and Time ---
+  // --- Get Current Date and Time for AI Context ---
   const currentDate = new Date();
   const formattedDate = currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const currentTime = currentDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
 
-  const systemPromptContent = `Current date: ${formattedDate}, time: ${currentTime}.`;
-  // ---------------------------------
+  // Add current location if available (from context or a hardcoded default)
+  const currentLocation = "Dhaka, Dhaka Division, Bangladesh"; // From your context
+  const systemPromptContent = `Current date: ${formattedDate}, time: ${currentTime}. Current location: ${currentLocation}.`;
+  // --------------------------------------------------
 
   try {
     let replyText = '';
 
     if (provider === 'gemini') {
-      // ─── GOOGLE GEMINI CALL (Gemini 2.0 Flash) ─────────────────────────────────────────
+      console.log('[ai.js] Handling Gemini request.');
       if (!process.env.GEMINI_API_KEY) {
+        console.error('[ai.js] GEMINI_API_KEY is not set!');
         return {
           statusCode: 500,
           body: JSON.stringify({ error: 'GEMINI_API_KEY environment variable not set.' }),
         };
       }
 
-      // Initialize the GoogleGenerativeAI client with your key
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-      // Use “gemini-2.0-flash” model for this example
       const geminiModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-      // Pass the system prompt content with the user message
-      const fullMessage = `${systemPromptContent}\n\nUser: ${userMessage}`; // Combine system info with user message
+      // Combine system info with user message for Gemini
+      const fullMessage = `${systemPromptContent}\n\nUser: ${userMessage}`;
 
-      console.log('Calling Google Gemini 2.0 Flash with message:', fullMessage);
+      console.log('Calling Google Gemini 2.0 Flash with full message:', fullMessage);
       const geminiResult = await geminiModel.generateContent(fullMessage);
       const geminiResponse = await geminiResult.response;
       replyText = geminiResponse.text().trim();
       console.log('Gemini Reply:', replyText);
 
     } else if (provider === 'deepseek') {
-      // ─── OPENROUTER DEEPSEEK CALL (deepseek-chat-v3-0324:free) ──────────────────────────
+      console.log('[ai.js] Handling Deepseek request.');
       if (!process.env.OPENROUTER_API_KEY) {
+        console.error('[ai.js] OPENROUTER_API_KEY is not set!');
         return {
           statusCode: 500,
           body: JSON.stringify({ error: 'OPENROUTER_API_KEY environment variable not set.' }),
         };
       }
 
-      // OpenRouter chat-completions endpoint
       const openRouterEndpoint = 'https://api.openrouter.ai/v1/chat/completions';
 
       console.log('Calling OpenRouter Deepseek (v3-0324:free) with message:', userMessage);
@@ -87,7 +89,6 @@ exports.handler = async function (event, context) {
             { role: 'system', content: systemPromptContent }, // Add system prompt
             { role: 'user', content: userMessage }
           ],
-          // (Optional) you can add temperature, max_tokens, etc. here
         }),
       });
 
@@ -112,14 +113,16 @@ exports.handler = async function (event, context) {
       console.log('Deepseek Reply:', replyText);
 
     } else if (provider === 'brave') {
-      // ─── BRAVE SEARCH API CALL ──────────────────────────────────────────
+      console.log('[ai.js] Handling Brave search request. Query:', query);
       if (!process.env.BRAVE_API_KEY) {
+        console.error('[ai.js] BRAVE_API_KEY is not set!');
         return {
           statusCode: 500,
           body: JSON.stringify({ error: 'BRAVE_API_KEY environment variable not set.' }),
         };
       }
       if (!query) {
+        console.error('[ai.js] Brave search: No query provided.');
         return {
           statusCode: 400,
           body: JSON.stringify({ error: 'No query provided for Brave search.' }),
@@ -127,7 +130,7 @@ exports.handler = async function (event, context) {
       }
 
       const braveEndpoint = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}`;
-      console.log('Calling Brave Search API with query:', query);
+      console.log('[ai.js] Fetching from Brave API:', braveEndpoint);
 
       const braveResponse = await fetch(braveEndpoint, {
         method: 'GET',
@@ -139,17 +142,16 @@ exports.handler = async function (event, context) {
 
       if (!braveResponse.ok) {
         const errText = await braveResponse.text();
-        console.error('Brave API Error (Status:', braveResponse.status, '):', errText);
+        console.error('[ai.js] Brave API Error (Status:', braveResponse.status, '):', errText);
         throw new Error(`Brave Search API returned an error: ${errText}`);
       }
 
       const braveData = await braveResponse.json();
-      console.log('Brave Search Results:', braveData);
+      console.log('[ai.js] Brave Search Results received:', JSON.stringify(braveData, null, 2));
 
-      // Extract and format relevant search results
       let results = [];
       if (braveData.web && braveData.web.results) {
-        results = braveData.web.results.slice(0, 5).map(item => ({ // Take top 5 results
+        results = braveData.web.results.slice(0, 5).map(item => ({
           title: item.title,
           url: item.url,
           snippet: item.description,
@@ -162,15 +164,12 @@ exports.handler = async function (event, context) {
           replyText += `${index + 1}. **[${r.title}](${r.url})**\n`;
           replyText += `   ${r.snippet}\n\n`;
         });
-        // You might want to append the current date/time to the Brave search response too,
-        // if the bot should specifically mention when the search was performed.
-        // For simplicity, we'll leave it out here as it's primarily for AI context.
       } else {
         replyText = "I couldn't find any relevant results for your search query on the web.";
       }
 
     } else {
-      // Unknown provider
+      console.warn(`[ai.js] Unsupported AI provider received: ${provider}`);
       return {
         statusCode: 400,
         body: JSON.stringify({
@@ -179,14 +178,13 @@ exports.handler = async function (event, context) {
       };
     }
 
-    // ─── Return the chosen-provider’s reply ───────────────────────────────────────────
     return {
       statusCode: 200,
       body: JSON.stringify({ reply: replyText }),
     };
 
   } catch (err) {
-    console.error('Netlify Function Handler Error:', err.message);
+    console.error('[ai.js] Netlify Function Handler Error:', err.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Server error during AI API call: ' + err.message }),
