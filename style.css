@@ -215,6 +215,27 @@ body.dark-mode .document-item button {
     color: var(--button-text-dark);
 }
 
+/* Existing styles... */
+
+/* Add this to your style.css */
+.current-info {
+    font-size: 0.85rem;
+    color: #666; /* Or var(--text-color-light) / --text-color-dark */
+    margin-top: 10px;
+    margin-bottom: 20px;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: rgba(0,0,0,0.03);
+    text-align: center;
+}
+
+body.dark-mode .current-info {
+    color: #bbb;
+    background-color: rgba(255,255,255,0.05);
+}
+
+/* Existing styles... */
+
 
 /* App Container Layout */
 .app-container {
@@ -869,4 +890,50 @@ code {
 }
 body.dark-mode code {
     background-color: rgba(255,255,255,.1);
+}
+
+/* Typing Indicator / Thinking Animation */
+.thinking-indicator {
+    background-color: var(--ai-msg-bg-light); /* Or a distinct background */
+    color: var(--text-color-light);
+    max-width: fit-content; /* Shrink to content size */
+    padding: 8px 15px;
+    border-radius: 15px;
+    align-self: flex-start; /* Like AI messages */
+    animation: fadeIn 0.3s ease-out; /* Use existing fade-in */
+}
+
+body.dark-mode .thinking-indicator {
+    background-color: var(--ai-msg-bg-dark);
+    color: var(--text-color-dark);
+}
+
+.typing-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background-color: #888; /* Darker dots for light mode */
+    border-radius: 50%;
+    margin: 0 1px;
+    animation: bounce 1.4s infinite ease-in-out;
+}
+
+body.dark-mode .typing-dot {
+    background-color: #bbb; /* Lighter dots for dark mode */
+}
+
+.typing-dot:nth-child(1) {
+    animation-delay: -0.32s;
+}
+.typing-dot:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+    0%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-8px);
+    }
 }

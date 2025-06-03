@@ -1,8 +1,5 @@
 // netlify/functions/ai.js
 
-// Ensure you have these installed:
-// npm install node-fetch @google/generative-ai
-
 const fetch = require('node-fetch');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -21,11 +18,12 @@ exports.handler = async function (event, context) {
 
   const userMessage = body.message;
   const provider = (body.provider || 'gemini').toLowerCase(); // default to 'gemini'
+  const query = body.query; // New: For Brave search queries
 
-  if (!userMessage) {
+  if (!userMessage && !query) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: 'No message provided in the request' }),
+      body: JSON.stringify({ error: 'No message or query provided in the request' }),
     };
   }
 
@@ -101,12 +99,67 @@ exports.handler = async function (event, context) {
       }
       console.log('Deepseek Reply:', replyText);
 
+    } else if (provider === 'brave') {
+      // ─── BRAVE SEARCH API CALL ──────────────────────────────────────────
+      if (!process.env.BRAVE_API_KEY) {
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: 'BRAVE_API_KEY environment variable not set.' }),
+        };
+      }
+      if (!query) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'No query provided for Brave search.' }),
+        };
+      }
+
+      const braveEndpoint = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}`;
+      console.log('Calling Brave Search API with query:', query);
+
+      const braveResponse = await fetch(braveEndpoint, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Subscription-Token': process.env.BRAVE_API_KEY,
+        },
+      });
+
+      if (!braveResponse.ok) {
+        const errText = await braveResponse.text();
+        console.error('Brave API Error (Status:', braveResponse.status, '):', errText);
+        throw new Error(`Brave Search API returned an error: ${errText}`);
+      }
+
+      const braveData = await braveResponse.json();
+      console.log('Brave Search Results:', braveData);
+
+      // Extract and format relevant search results
+      let results = [];
+      if (braveData.web && braveData.web.results) {
+        results = braveData.web.results.slice(0, 5).map(item => ({ // Take top 5 results
+          title: item.title,
+          url: item.url,
+          snippet: item.description,
+        }));
+      }
+
+      if (results.length > 0) {
+        replyText = "Here are some web search results:\n\n";
+        results.forEach((r, index) => {
+          replyText += `${index + 1}. **[${r.title}](${r.url})**\n`;
+          replyText += `   ${r.snippet}\n\n`;
+        });
+      } else {
+        replyText = "I couldn't find any relevant results for your search query on the web.";
+      }
+
     } else {
       // Unknown provider
       return {
         statusCode: 400,
         body: JSON.stringify({
-          error: `Unsupported AI provider: ${provider}. Supported: 'gemini', 'deepseek'`
+          error: `Unsupported AI provider: ${provider}. Supported: 'gemini', 'deepseek', 'brave'`
         }),
       };
     }

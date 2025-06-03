@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toolToggleBtns = document.querySelectorAll('.tool-toggle-btn');
     const newChatBtn = document.querySelector('.new-chat-btn');
     const chatTitle = document.querySelector('.chat-title');
+    const currentDateTimeElement = document.getElementById('current-datetime'); // Get the new element
 
     // --- 1. Settings Modal & Dark Mode Toggle ---
     settingsBtn.addEventListener('click', () => {
@@ -48,6 +49,22 @@ document.addEventListener('DOMContentLoaded', () => {
         darkModeToggle.checked = false;
     }
 
+    // --- Current Date & Time Functionality ---
+    function updateDateTime() {
+        const now = new Date();
+        const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+        const dateString = now.toLocaleDateString(undefined, optionsDate);
+        const timeString = now.toLocaleTimeString(undefined, optionsTime);
+        currentDateTimeElement.innerHTML = `${dateString}<br>${timeString}`; // Update innerHTML
+    }
+
+    // Call it once to display immediately
+    updateDateTime();
+    // Update every second
+    setInterval(updateDateTime, 1000);
+
+
     // --- 2. Full-Screen Toggle ---
     fullScreenToggleBtn.addEventListener('click', () => {
         body.classList.toggle('full-screen');
@@ -79,15 +96,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function sendMessage() {
+    // Function to append a thinking message
+    function appendThinkingMessage() {
+        const thinkingDiv = document.createElement('div');
+        thinkingDiv.classList.add('message', 'ai-message', 'thinking-indicator');
+        thinkingDiv.innerHTML = `
+            <p>RiRs Bot is thinking<span class="typing-dot">.</span><span class="typing-dot">.</span><span class="typing-dot">.</span></p>
+            <span class="timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        `;
+        chatDisplay.appendChild(thinkingDiv);
+        chatDisplay.scrollTop = chatDisplay.scrollHeight;
+    }
+
+    // Function to remove the thinking message
+    function removeThinkingMessage() {
+        const thinkingDiv = chatDisplay.querySelector('.thinking-indicator');
+        if (thinkingDiv) {
+            thinkingDiv.remove();
+        }
+    }
+
+
+    async function sendMessage() {
         const messageText = promptInput.value.trim();
         if (messageText) {
             appendMessage(messageText, 'user');
             promptInput.value = '';
             promptInput.style.height = 'auto';
 
-            // Show a "thinking" indicator or system message while waiting for AI
-            appendSystemMessage('RiRs Bot is thinking...');
+            appendThinkingMessage(); // Show thinking indicator
+
+            let providerToSend = 'gemini'; // Default AI provider
+            // Check if Web Browse tool is active
+            const webToolBtn = document.querySelector('.tool-toggle-btn[data-tool="web"]');
+            if (webToolBtn && webToolBtn.classList.contains('active')) {
+                // If the web tool is active, send the query to Brave API
+                // For a real app, you might use the AI to decide if a web search is needed
+                // For this example, we'll assume if web tool is active, the next query is for web search.
+                // Or you could make 'web' an explicit command like '/web <query>'
+                providerToSend = 'brave';
+            }
+
+            // Construct payload based on provider
+            let requestBody;
+            if (providerToSend === 'brave') {
+                requestBody = JSON.stringify({ query: messageText, provider: 'brave' });
+            } else {
+                requestBody = JSON.stringify({ message: messageText, provider: providerToSend });
+            }
 
             // Make API call to your Netlify function
             fetch('/.netlify/functions/ai', {
@@ -95,9 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ message: messageText, provider: 'gemini' }), // You can change 'gemini' to 'deepseek'
+                body: requestBody,
             })
             .then(response => {
+                removeThinkingMessage(); // Remove thinking indicator
                 if (!response.ok) {
                     // If the response is not OK (e.g., 400, 500 status)
                     return response.json().then(err => { throw new Error(err.error || 'Unknown API error'); });
@@ -105,20 +162,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(data => {
-                // Remove the "thinking" message
-                let systemMessageDiv = chatDisplay.querySelector('.system-message');
-                if (systemMessageDiv && systemMessageDiv.textContent === 'RiRs Bot is thinking...') {
-                    systemMessageDiv.remove();
-                }
                 appendMessage(data.reply, 'ai'); // Now, data.reply will be parsed as markdown
             })
             .catch(error => {
                 console.error('Error fetching AI response:', error);
-                // Remove the "thinking" message and display an error
-                let systemMessageDiv = chatDisplay.querySelector('.system-message');
-                if (systemMessageDiv && systemMessageDiv.textContent === 'RiRs Bot is thinking...') {
-                    systemMessageDiv.remove();
-                }
+                removeThinkingMessage(); // Remove thinking indicator on error
                 appendSystemMessage('Error: Could not get a response. ' + error.message);
             });
         }
