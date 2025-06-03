@@ -1,0 +1,15 @@
+[build]
+  publish = "/"  # This specifies the directory to deploy (your frontend files)
+  functions = "netlify/functions" # This tells Netlify where to find your serverless functions
+
+[dev]
+  framework = "#static" # Explicitly tell Netlify CLI this is a static site
+  port = 8888
+  publish = "/"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true

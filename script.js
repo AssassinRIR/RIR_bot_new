@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         promptInput.style.height = promptInput.scrollHeight + 'px';
     });
 
-    // --- 4. Send Message (Basic) ---
+    // --- 4. Send Message (Integrated with Netlify Function) ---
     sendBtn.addEventListener('click', () => {
         sendMessage();
     });
@@ -86,10 +86,41 @@ document.addEventListener('DOMContentLoaded', () => {
             promptInput.value = '';
             promptInput.style.height = 'auto';
 
-            // Simulate AI response (replace with actual API call)
-            setTimeout(() => {
-                appendMessage("I received your message: '" + messageText + "'. How can I assist further?", 'ai');
-            }, 1000);
+            // Show a "thinking" indicator or system message while waiting for AI
+            appendSystemMessage('RiRs Bot is thinking...'); //
+
+            // Make API call to your Netlify function
+            fetch('/.netlify/functions/ai', { // This path targets your Netlify function
+                method: 'POST', //
+                headers: { //
+                    'Content-Type': 'application/json', //
+                },
+                body: JSON.stringify({ message: messageText, provider: 'gemini' }), // You can change 'gemini' to 'deepseek'
+            })
+            .then(response => { //
+                if (!response.ok) { //
+                    // If the response is not OK (e.g., 400, 500 status)
+                    return response.json().then(err => { throw new Error(err.error || 'Unknown API error'); }); //
+                }
+                return response.json(); //
+            })
+            .then(data => { //
+                // Remove the "thinking" message
+                let systemMessageDiv = chatDisplay.querySelector('.system-message'); //
+                if (systemMessageDiv && systemMessageDiv.textContent === 'RiRs Bot is thinking...') { //
+                    systemMessageDiv.remove(); // Or hide it
+                }
+                appendMessage(data.reply, 'ai'); //
+            })
+            .catch(error => { //
+                console.error('Error fetching AI response:', error); //
+                // Remove the "thinking" message and display an error
+                let systemMessageDiv = chatDisplay.querySelector('.system-message'); //
+                if (systemMessageDiv && systemMessageDiv.textContent === 'RiRs Bot is thinking...') { //
+                    systemMessageDiv.remove(); //
+                }
+                appendSystemMessage('Error: Could not get a response. ' + error.message); //
+            });
         }
     }
 
